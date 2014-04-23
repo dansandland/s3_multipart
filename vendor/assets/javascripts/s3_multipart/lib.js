@@ -46,7 +46,7 @@ function S3MP(options) {
             uploadObj.parts[j].activate();
           }
           S3MP.handler.startProgressTimer(key);
-          S3MP.onStart(uploadObj); // This probably needs to go somewhere else. 
+          S3MP.onStart(uploadObj); // This probably needs to go somewhere else.
         }
       }
       return beginUpload;
@@ -54,7 +54,7 @@ function S3MP(options) {
 
     // called when an upload is paused or the network connection cuts out
     onError: function(uploadObj, part) {
-      // To-do
+      S3MP.onError(uploadObj, part);
     },
 
     // called when a single part has successfully uploaded
@@ -68,7 +68,7 @@ function S3MP(options) {
       ETag = finished_part.xhr.getResponseHeader("ETag");
       uploadObj.Etags.push({ ETag: ETag.replace(/\"/g, ''), partNum: finished_part.num });
 
-      // Increase the uploaded count and delete the finished part 
+      // Increase the uploaded count and delete the finished part
       uploadObj.uploaded += finished_part.size;
       uploadObj.inprogress[finished_part.num] = 0;
       i = _.indexOf(parts, finished_part);
@@ -81,12 +81,12 @@ function S3MP(options) {
             return true;
           }
         });
-        if (i !== -1){ 
+        if (i !== -1){
           parts[i].activate();
         }
       }
 
-      // If no parts remain then the upload has finished 
+      // If no parts remain then the upload has finished
       if (!parts.length) {
         this.onComplete(uploadObj);
       }
@@ -95,7 +95,7 @@ function S3MP(options) {
     // called when all parts have successfully uploaded
     onComplete: function(uploadObj) {
       var key = _.indexOf(S3MP.uploadList, uploadObj);
-      
+
       // Stop the onprogress timer
       this.clearProgressTimer(key);
 
@@ -112,7 +112,7 @@ function S3MP(options) {
 
     // Called by progress_timer
     onProgress: function(key, size, done, percent, speed) {
-      S3MP.onProgress(key, size, done, percent, speed);          
+      S3MP.onProgress(key, size, done, percent, speed);
     },
 
     startProgressTimer: function() {
@@ -159,7 +159,7 @@ function S3MP(options) {
   _.each(files, function(file, key) {
     if (file.size < 5000000) {
       return S3MP.onError({name: "FileSizeError", message: "File size is too small"})
-      // This should still work. The multipart API just can't be used b/c Amazon doesn't allow 
+      // This should still work. The multipart API just can't be used b/c Amazon doesn't allow
       // multipart file uploads that are less than 5 mb in size.
     }
 
@@ -221,14 +221,14 @@ S3MP.prototype.completeMultipart = function(uploadObj, cb) {
 // the site server, and send the request.
 S3MP.prototype.deliverRequest = function(xhr, body, cb) {
   var self = this;
-  
+
   xhr.onload = function() {
     response = JSON.parse(this.responseText);
-    if (response.error) { 
+    if (response.error) {
       return self.onError({
         name: "ServerResponse",
         message: response.error
-      });  
+      });
     }
     cb(response);
   };
@@ -247,12 +247,12 @@ S3MP.prototype.createXhrRequest = function() {
   var xhrRequest;
 
   // Sniff for xhr object
-  if (typeof XMLHttpRequest.constructor === "function") { 
+  if (typeof XMLHttpRequest.constructor === "function") {
     xhrRequest = XMLHttpRequest;
   } else if (typeof XDomainRequest !== "undefined") {
     xhrRequest = XDomainRequest;
   } else {
-    xhrRequest = null; // Error out to the client (To-do) 
+    xhrRequest = null; // Error out to the client (To-do)
   }
 
   return function(method, url, cb, open) { // open defaults to true
@@ -262,18 +262,18 @@ S3MP.prototype.createXhrRequest = function() {
     if (typeof args[0] === "undefined") {
       cb = null;
       open = false;
-    } 
+    }
 
     xhr = new xhrRequest();
     if (open) { // open the request unless specified otherwise
-      xhr.open(method, url, true); 
+      xhr.open(method, url, true);
     }
     xhr.onreadystatechange = cb;
 
     return xhr;
   };
 
-}();    
+}();
 
 S3MP.prototype.sliceBlob = function() {
   try {
@@ -304,7 +304,7 @@ S3MP.prototype._returnUploadObj = function(key) {
   var uploadObj = _.find(this.uploadList, function(uploadObj) {
     return uploadObj.key === key;
   });
-  return uploadObj;   
+  return uploadObj;
 };
 
 // cancel a given file upload
@@ -321,7 +321,7 @@ S3MP.prototype.cancel = function(key) {
 // pause a given file upload
 S3MP.prototype.pause = function(key) {
   var uploadObj = this._returnUploadObj(key);
-  
+
   _.each(uploadObj.parts, function(part, key, list) {
     if (part.status == "active") {
       part.pause();
@@ -334,23 +334,23 @@ S3MP.prototype.pause = function(key) {
 // resume a given file upload
 S3MP.prototype.resume = function(key) {
   var uploadObj = this._returnUploadObj(key);
-  
+
   _.each(uploadObj.parts, function(part, key, list) {
     if (part.status == "paused") {
       part.activate();
     }
   });
 
-  this.onResume();          
+  this.onResume();
 };
 
 // Upload constructor
 function Upload(file, o, key) {
   function Upload() {
     var upload, id, parts, part, segs, chunk_segs, chunk_lens, pipes, blob;
-    
+
     upload = this;
-    
+
     this.key = key;
     this.file = file;
     this.name = file.name;
@@ -381,7 +381,7 @@ function Upload(file, o, key) {
     } else { // greater than 5 mb (S3 does not allow multipart uploads < 5 mb)
       num_segs = 1;
       pipes = 1;
-    }  
+    }
 
     chunk_segs = _.range(num_segs + 1);
     chunk_lens = _.map(chunk_segs, function(seg) {
@@ -398,7 +398,7 @@ function Upload(file, o, key) {
       this.parts.pop(); // Remove the empty blob at the end of the array
     }
 
-    // init function will initiate the multipart upload, sign all the parts, and 
+    // init function will initiate the multipart upload, sign all the parts, and
     // start uploading some parts in parallel
     this.init = function() {
       upload.initiateMultipart(upload, function(obj) {
@@ -415,15 +415,15 @@ function Upload(file, o, key) {
             upload.handler.beginUpload(pipes, upload);
           });
         });
-      }); 
-    } 
+      });
+    }
   };
   // Inherit the properties and prototype methods of the passed in S3MP instance object
   Upload.prototype = o;
-  return new Upload(); 
+  return new Upload();
 }
 
-// Upload part constructor 
+// Upload part constructor
 function UploadPart(blob, key, upload) {
   var part, xhr;
 
@@ -449,7 +449,7 @@ function UploadPart(blob, key, upload) {
 
 };
 
-UploadPart.prototype.activate = function() { 
+UploadPart.prototype.activate = function() {
   this.xhr.open('PUT', 'http://'+this.upload.bucket+'.s3.amazonaws.com/'+this.upload.object_name+'?partNumber='+this.num+'&uploadId='+this.upload.upload_id, true);
   this.xhr.setRequestHeader('x-amz-date', this.date);
   this.xhr.setRequestHeader('Authorization', this.auth);
