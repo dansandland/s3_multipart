@@ -1,6 +1,6 @@
 module S3Multipart
 
-  # Collection of methods to be mixed in to the Upload class.  
+  # Collection of methods to be mixed in to the Upload class.
   # Handle all communication with Amazon S3 servers
   module TransferHelpers
 
@@ -15,7 +15,7 @@ module S3Multipart
                                                              headers: options[:headers]
 
       response = Http.post url, headers: headers
-      parsed_response_body = XmlSimple.xml_in(response.body)  
+      parsed_response_body = XmlSimple.xml_in(response.body)
 
       { "key"  => parsed_response_body["Key"][0],
         "upload_id"   => parsed_response_body["UploadId"][0],
@@ -23,23 +23,25 @@ module S3Multipart
     end
 
     def sign_batch(options)
+      part_numbers = options[:part_numbers].to_s.split("-")
+
       parts = options[:content_lengths].to_s.split('-').each_with_index.map do |len, i|
-        sign_part(options.merge!({content_length: len, part_number: i+1}))
+        sign_part(options.merge!({content_length: len, part_number: part_numbers[i] }))
       end
     end
 
     def sign_part(options)
       url = "/#{options[:object_name]}?partNumber=#{options[:part_number]}&uploadId=#{options[:upload_id]}"
       authorization, date = sign_request verb: 'PUT', url: URI.escape(url), content_length: options[:content_length]
-      
-      { authorization: authorization, date: date }
+
+      { authorization: authorization, date: date, part_nummber: options[:part_number] }
     end
 
     def complete(options)
       options[:content_type] = "application/xml"
 
       url = URI.escape("/#{options[:object_name]}?uploadId=#{options[:upload_id]}")
-      
+
       body = format_part_list_in_xml(options)
       headers = { content_type: options[:content_type],
                   content_length: options[:content_length] }
@@ -47,7 +49,7 @@ module S3Multipart
       headers[:authorization], headers[:date] = sign_request verb: 'POST', url: url, content_type: options[:content_type]
 
       response = Http.post url, {headers: headers, body: body}
-      parsed_response_body = XmlSimple.xml_in(response.body)  
+      parsed_response_body = XmlSimple.xml_in(response.body)
 
       begin
         return { location: parsed_response_body["Location"][0] }
@@ -101,7 +103,7 @@ module S3Multipart
         request_parts << "/#{Config.instance.bucket_name}#{options[:url]}"
         unsigned_request = request_parts.join("\n")
         signature = Base64.strict_encode64(OpenSSL::HMAC.digest('sha1', Config.instance.s3_secret_key, unsigned_request))
-        
+
         authorization = "AWS" + " " + Config.instance.s3_access_key + ":" + signature
       end
 
@@ -111,7 +113,7 @@ module S3Multipart
 
       def format_part_list_in_xml(options)
         hash = Hash["Part", ""];
-        hash["Part"] = options[:parts].map do |part| 
+        hash["Part"] = options[:parts].map do |part|
           { "PartNumber" => part[:partNum], "ETag" => part[:ETag] }
         end
         hash["Part"].sort_by! {|obj| obj["PartNumber"]}
