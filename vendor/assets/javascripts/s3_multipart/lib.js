@@ -187,7 +187,7 @@ S3MP.prototype.initiateMultipart = function(upload, cb) {
 
 };
 
-S3MP.prototype.signPartRequests = function(id, object_name, upload_id, parts, cb) {
+S3MP.prototype.signPartRequests = function(id, object_name, upload_id, part, cb) {
   var content_lengths, url, body, xhr;
 
   content_lengths = _.reduce(_.rest(parts), function(memo, part) {
@@ -206,7 +206,7 @@ S3MP.prototype.signPartRequests = function(id, object_name, upload_id, parts, cb
                         });
 
   xhr = this.createXhrRequest('PUT', url);
-  this.deliverRequest(xhr, body, cb, parts);
+  this.deliverRequest(xhr, body, cb, part);
 };
 
 S3MP.prototype.completeMultipart = function(uploadObj, cb) {
@@ -225,7 +225,7 @@ S3MP.prototype.completeMultipart = function(uploadObj, cb) {
 
 // Specify callbacks, request body, and settings for requests that contact
 // the site server, and send the request.
-S3MP.prototype.deliverRequest = function(xhr, body, cb, parts) {
+S3MP.prototype.deliverRequest = function(xhr, body, cb, part) {
   var self = this;
 
   xhr.onload = function() {
@@ -236,11 +236,12 @@ S3MP.prototype.deliverRequest = function(xhr, body, cb, parts) {
         message: response.error
       });
     }
-    cb(response, parts);
+    cb(response, part);
   };
 
   xhr.onerror = function() {
-    // To-do: Handle communication errors
+    console.log("onerror invoke for xhr request under part " + part[0].num + " re activating it.");
+    part[0].activate();
   };
 
   xhr.setRequestHeader('Content-Type', 'application/json');
@@ -462,14 +463,13 @@ UploadPart.prototype.activate = function() {
 
   if( (current_time - part_date)/1000/60 > 15 ){ //x-amz-date is greater then 15 Min so get a new date and auth token
     console.log("Getting new signed path from server as x-amz-date expired for part number " + this.num);
-    this.upload.signPartRequests(this.upload.id, this.upload.object_name, this.upload.upload_id, [this], function(response, parts) {
+    this.upload.signPartRequests(this.upload.id, this.upload.object_name, this.upload.upload_id, [this], function(response, part) {
 
-      console.log("Got new signed path from server , going to start the chunk upload for part number " );
-      part = parts[0];
+      console.log("Got new signed path from server , going to start the chunk upload for part number " +  part.num);
+      part = part[0];
       part.date = response[0].date;
       part.auth = response[0].authorization;
-      part.activate()
-
+      part.activate();
 
     });
   }else{
