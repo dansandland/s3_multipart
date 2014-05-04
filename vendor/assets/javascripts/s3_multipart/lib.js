@@ -187,7 +187,7 @@ S3MP.prototype.initiateMultipart = function(upload, cb) {
 
 };
 
-S3MP.prototype.signPartRequests = function(id, object_name, upload_id, part, cb) {
+S3MP.prototype.signPartRequests = function(id, object_name, upload_id, parts, cb) {
   var content_lengths, url, body, xhr;
 
   content_lengths = _.reduce(_.rest(parts), function(memo, part) {
@@ -206,7 +206,7 @@ S3MP.prototype.signPartRequests = function(id, object_name, upload_id, part, cb)
                         });
 
   xhr = this.createXhrRequest('PUT', url);
-  this.deliverRequest(xhr, body, cb, part);
+  this.deliverRequest(xhr, body, cb, parts);
 };
 
 S3MP.prototype.completeMultipart = function(uploadObj, cb) {
