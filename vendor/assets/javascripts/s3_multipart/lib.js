@@ -465,7 +465,7 @@ UploadPart.prototype.activate = function() {
     console.log("Getting new signed path from server as x-amz-date expired for part number " + this.num);
     this.upload.signPartRequests(this.upload.id, this.upload.object_name, this.upload.upload_id, [this], function(response, part) {
 
-      console.log("Got new signed path from server , going to start the chunk upload for part number " +  part.num);
+      console.log("Got new signed path from server , going to start the chunk upload for part number " +  part[0].num);
       part = part[0];
       part.date = response[0].date;
       part.auth = response[0].authorization;
