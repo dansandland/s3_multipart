@@ -131,9 +131,9 @@ function S3MP(options) {
           size = upload.size;
           done = upload.uploaded;
 
-          _.each(upload.inprogress,function(val) {
-            done += val;
-          });
+          // _.each(upload.inprogress,function(val) {
+          //   done += val;
+          // });
 
           percent = done/size * 100;
           speed = done - last_upload_chunk[key];
