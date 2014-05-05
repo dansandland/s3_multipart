@@ -78,11 +78,12 @@ function S3MP(options) {
       // activate one of the remaining parts
       if (parts.length) {
         i = _.findIndex(parts, function(el, index, collection) {
-          if (el.status !== "active") {
+          if (el.status !== "active" && el.status !== "going_to_active") {
             return true;
           }
         });
         if (i !== -1){
+          parts[i].status = "going_to_active"
           parts[i].activate();
         }
       }
@@ -465,7 +466,7 @@ UploadPart.prototype.activate = function() {
     console.log("Getting new signed path from server as x-amz-date expired for part number " + this.num);
     this.upload.signPartRequests(this.upload.id, this.upload.object_name, this.upload.upload_id, [this], function(response, part) {
 
-      console.log("Got new signed path from server , going to start the chunk upload for part number " +  part[0].num);
+      console.log("Got new signed path from server , going to start the chunk upload for part number " +  part[].num);
       part = part[0];
       part.date = response[0].date;
       part.auth = response[0].authorization;
