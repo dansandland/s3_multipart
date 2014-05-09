@@ -131,7 +131,7 @@ function S3MP(options) {
           done = upload.uploaded;
 
           _.each(upload.inprogress,function(val, index) {
-            part_available = _.find(parts, function(part){
+            part_available = _.find(upload.parts, function(part){
               return part.num == index
             })
 
