@@ -71,14 +71,7 @@ function S3MP(options) {
 
       // Increase the uploaded count and delete the finished part
       uploadObj.uploaded += finished_part.size;
-
-      console.log("Part completed " + finished_part.num  + " going to remove it from progress array");
-      console.log(uploadObj.inprogress);
-      uploadObj.inprogress.splice(finished_part.num, 1); // [finished_part.num] = 0;
-      console.log("after part removal inprogress array");
-      console.log(uploadObj.inprogress);
-
-
+      uploadObj.inprogress[finished_part.num] = 0;
       i = _.indexOf(parts, finished_part);
       parts.splice(i,1);
 
@@ -137,8 +130,13 @@ function S3MP(options) {
           size = upload.size;
           done = upload.uploaded;
 
-          _.each(upload.inprogress,function(val) {
-            done += val;
+          _.each(upload.inprogress,function(val, index) {
+            part_available = _.find(parts, function(part){
+              return part.num == index
+            })
+
+            if(part_available)
+              done += val;
           });
 
           percent = done/size * 100;
