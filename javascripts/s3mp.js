@@ -161,7 +161,8 @@ S3MP.prototype.initiateMultipart = function(upload, cb) {
   body = JSON.stringify({ object_name  : upload.name,
                           content_type : upload.type,
                           content_size : upload.size,
-                          uploader     : $(this.fileInputElement).data("uploader")
+                          uploader     : $(this.fileInputElement).data("uploader"),
+                          base_path    : $(this.fileInputElement).data("base-path")
                         });
 
   xhr = this.createXhrRequest('POST', url);
